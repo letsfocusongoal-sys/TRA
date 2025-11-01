@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting 1% Better Each Day - Habit Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 100%;
+            overflow-x: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .controls input, .controls button, .controls select {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .controls button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+
+        .controls button:hover {
+            background-color: #45a049;
+        }
+
+        .tracker-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 12px;
+        }
+
+        .tracker-table th, .tracker-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            min-width: 35px;
+        }
+
+        .tracker-table th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .tracker-table td.protocol-cell {
+            text-align: left;
+            min-width: 120px;
+            cursor: pointer;
+            background-color: #fafafa;
+        }
+
+        .tracker-table td.protocol-cell:hover {
+            background-color: #e8e8e8;
+        }
+
+        .tracker-table td.day-cell {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .tracker-table td.day-cell:hover {
+            background-color: #e3f2fd;
+        }
+
+        .tracker-table td.day-cell.done {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+
+        .tracker-table td.total-cell {
+            background-color: #fff3cd;
+            font-weight: bold;
+        }
+
+        .sleep-cell {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .sleep-cell:hover {
+            background-color: #e3f2fd;
+        }
+
+        .sleep-cell.selected {
+            background-color: #2196F3;
+            color: white;
+            font-weight: bold;
+        }
+
+        .day-header {
+            font-size: 10px;
+        }
+
+        .date-number {
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .stats {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .stats h3 {
+            margin-bottom: 10px;
+        }
+
+        .protocol-input {
+            width: 100%;
+            border: 1px solid #4CAF50;
+            padding: 4px;
+            font-size: 12px;
+        }
+
+        .delete-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+
+        .delete-btn:hover {
+            background-color: #da190b;
+        }
+
+        @media print {
+            .controls, .delete-btn {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Getting 1% Better Each Day</h1>
+        <h2 id="dashboardTitle">31 Day Dashboard</h2>
+
+        <div class="controls">
+            <select id="monthSelect">
+                <option value="0">January</option>
+                <option value="1">February</option>
+                <option value="2">March</option>
+                <option value="3">April</option>
+                <option value="4">May</option>
+                <option value="5">June</option>
+                <option value="6">July</option>
+                <option value="7">August</option>
+                <option value="8">September</option>
+                <option value="9">October</option>
+                <option value="10">November</option>
+                <option value="11">December</option>
+            </select>
+            <select id="yearSelect"></select>
+            <button onclick="changeMonth()">Load Month</button>
+            <button onclick="addProtocol()">Add New Habit</button>
+            <button onclick="exportData()">Export Data</button>
+            <button onclick="importData()">Import Data</button>
+            <button onclick="clearMonth()">Clear This Month</button>
+        </div>
+
+        <table class="tracker-table" id="protocolTable">
+            <thead>
+                <tr>
+                    <th>Protocols</th>
+                    <th colspan="31" id="daysHeader">Days</th>
+                </tr>
+                <tr id="dateRow">
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="protocolBody">
+            </tbody>
+            <tfoot>
+                <tr id="totalRow">
+                    <td class="total-cell">Total Points</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <table class="tracker-table" id="sleepTable">
+            <thead>
+                <tr>
+                    <th>Sleep</th>
+                    <th colspan="31">Days</th>
+                </tr>
+                <tr id="sleepDateRow">
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="sleepBody">
+                <tr>
+                    <td class="protocol-cell">9hrs</td>
+                </tr>
+                <tr>
+                    <td class="protocol-cell">8hrs</td>
+                </tr>
+                <tr>
+                    <td class="protocol-cell">7hrs</td>
+                </tr>
+                <tr>
+                    <td class="protocol-cell">6hrs</td>
+                </tr>
+                <tr>
+                    <td class="protocol-cell">5hrs</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="stats">
+            <h3>Monthly Statistics</h3>
+            <div id="statsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let protocols = [];
+        let habitData = {};
+        let sleepData = {};
+
+        // Initialize the app
+        function init() {
+            loadFromLocalStorage();
+            populateYearSelect();
+            document.getElementById('monthSelect').value = currentMonth;
+            document.getElementById('yearSelect').value = currentYear;
+            renderCalendar();
+            loadMonthData();
+        }
+
+        // Populate year select
+        function populateYearSelect() {
+            const yearSelect = document.getElementById('yearSelect');
+            for (let year = 2020; year <= 2030; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+        }
+
+        // Change month
+        function changeMonth() {
+            currentMonth = parseInt(document.getElementById('monthSelect').value);
+            currentYear = parseInt(document.getElementById('yearSelect').value);
+            renderCalendar();
+            loadMonthData();
+        }
+
+        // Get days in month
+        function getDaysInMonth(month, year) {
+            return new Date(year, month + 1, 0).getDate();
+        }
+
+        // Get day of week
+        function getDayOfWeek(day, month, year) {
+            const days = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
+            const date = new Date(year, month, day);
+            return days[date.getDay()];
+        }
+
+        // Render calendar
+        function renderCalendar() {
+            const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+
+            document.getElementById('dashboardTitle').textContent = 
+                `${daysInMonth} Day Dashboard - ${monthNames[currentMonth]} ${currentYear}`;
+
+            // Render date headers
+            const dateRow = document.getElementById('dateRow');
+            dateRow.innerHTML = '<th></th>';
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const th = document.createElement('th');
+                th.innerHTML = `<div class="date-number">${day}</div><div class="day-header">${getDayOfWeek(day, currentMonth, currentYear)}</div>`;
+                dateRow.appendChild(th);
+            }
+
+            // Render sleep date headers
+            const sleepDateRow = document.getElementById('sleepDateRow');
+            sleepDateRow.innerHTML = '<th></th>';
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const th = document.createElement('th');
+                th.innerHTML = `<div class="date-number">${day}</div><div class="day-header">${getDayOfWeek(day, currentMonth, currentYear)}</div>`;
+                sleepDateRow.appendChild(th);
+            }
+
+            renderProtocols();
+            renderSleepTracking();
+            calculateTotals();
+        }
+
+        // Render protocols
+        function renderProtocols() {
+            const protocolBody = document.getElementById('protocolBody');
+            const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+            protocolBody.innerHTML = '';
+
+            protocols.forEach((protocol, index) => {
+                const row = document.createElement('tr');
+
+                // Protocol name cell
+                const nameCell = document.createElement('td');
+                nameCell.className = 'protocol-cell';
+                nameCell.innerHTML = `${protocol} <button class="delete-btn" onclick="deleteProtocol(${index})">×</button>`;
+                nameCell.onclick = (e) => {
+                    if (e.target.className !== 'delete-btn') {
+                        editProtocol(index);
+                    }
+                };
+                row.appendChild(nameCell);
+
+                // Day cells
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayCell = document.createElement('td');
+                    dayCell.className = 'day-cell';
+                    const key = getKey(index, day);
+
+                    if (habitData[key]) {
+                        dayCell.classList.add('done');
+                        dayCell.textContent = '✓';
+                    }
+
+                    dayCell.onclick = () => toggleDay(index, day, dayCell);
+                    row.appendChild(dayCell);
+                }
+
+                protocolBody.appendChild(row);
+            });
+        }
+
+        // Render sleep tracking
+        function renderSleepTracking() {
+            const sleepBody = document.getElementById('sleepBody');
+            const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+            const sleepOptions = ['9hrs', '8hrs', '7hrs', '6hrs', '5hrs'];
+
+            sleepBody.innerHTML = '';
+
+            sleepOptions.forEach((hours) => {
+                const row = document.createElement('tr');
+
+                const nameCell = document.createElement('td');
+                nameCell.className = 'protocol-cell';
+                nameCell.textContent = hours;
+                row.appendChild(nameCell);
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const sleepCell = document.createElement('td');
+                    sleepCell.className = 'sleep-cell';
+                    const key = getSleepKey(day);
+
+                    if (sleepData[key] === hours) {
+                        sleepCell.classList.add('selected');
+                        sleepCell.textContent = '●';
+                    }
+
+                    sleepCell.onclick = () => toggleSleep(day, hours);
+                    row.appendChild(sleepCell);
+                }
+
+                sleepBody.appendChild(row);
+            });
+        }
+
+        // Get storage key
+        function getKey(protocolIndex, day) {
+            return `${currentYear}-${currentMonth}-${protocolIndex}-${day}`;
+        }
+
+        function getSleepKey(day) {
+            return `sleep-${currentYear}-${currentMonth}-${day}`;
+        }
+
+        // Toggle day
+        function toggleDay(protocolIndex, day, cell) {
+            const key = getKey(protocolIndex, day);
+
+            if (habitData[key]) {
+                delete habitData[key];
+                cell.classList.remove('done');
+                cell.textContent = '';
+            } else {
+                habitData[key] = true;
+                cell.classList.add('done');
+                cell.textContent = '✓';
+            }
+
+            saveToLocalStorage();
+            calculateTotals();
+        }
+
+        // Toggle sleep
+        function toggleSleep(day, hours) {
+            const key = getSleepKey(day);
+
+            if (sleepData[key] === hours) {
+                delete sleepData[key];
+            } else {
+                sleepData[key] = hours;
+            }
+
+            saveToLocalStorage();
+            renderSleepTracking();
+            calculateStats();
+        }
+
+        // Calculate totals
+        function calculateTotals() {
+            const totalRow = document.getElementById('totalRow');
+            const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+            totalRow.innerHTML = '<td class="total-cell">Total Points</td>';
+
+            let monthTotal = 0;
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                let dayTotal = 0;
+
+                protocols.forEach((protocol, index) => {
+                    const key = getKey(index, day);
+                    if (habitData[key]) {
+                        dayTotal++;
+                    }
+                });
+
+                const totalCell = document.createElement('td');
+                totalCell.className = 'total-cell';
+                totalCell.textContent = dayTotal;
+                totalRow.appendChild(totalCell);
+
+                monthTotal += dayTotal;
+            }
+
+            calculateStats(monthTotal);
+        }
+
+        // Calculate statistics
+        function calculateStats(monthTotal = 0) {
+            const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+            const statsContent = document.getElementById('statsContent');
+
+            // Calculate completion rate
+            const totalPossible = protocols.length * daysInMonth;
+            const completionRate = totalPossible > 0 ? ((monthTotal / totalPossible) * 100).toFixed(1) : 0;
+
+            // Calculate average sleep
+            const sleepEntries = Object.keys(sleepData).filter(key => key.startsWith(`sleep-${currentYear}-${currentMonth}`));
+            let avgSleep = 0;
+            if (sleepEntries.length > 0) {
+                const totalHours = sleepEntries.reduce((sum, key) => {
+                    const hours = parseInt(sleepData[key]);
+                    return sum + hours;
+                }, 0);
+                avgSleep = (totalHours / sleepEntries.length).toFixed(1);
+            }
+
+            statsContent.innerHTML = `
+                <p><strong>Total Points This Month:</strong> ${monthTotal} / ${totalPossible}</p>
+                <p><strong>Completion Rate:</strong> ${completionRate}%</p>
+                <p><strong>Total Habits Tracked:</strong> ${protocols.length}</p>
+                <p><strong>Days Logged:</strong> ${daysInMonth}</p>
+                <p><strong>Average Sleep:</strong> ${avgSleep || 'No data'} hours</p>
+                <p><strong>Sleep Entries:</strong> ${sleepEntries.length} days</p>
+            `;
+        }
+
+        // Add protocol
+        function addProtocol() {
+            const name = prompt('Enter habit name:');
+            if (name && name.trim()) {
+                protocols.push(name.trim());
+                saveToLocalStorage();
+                renderProtocols();
+                calculateTotals();
+            }
+        }
+
+        // Edit protocol
+        function editProtocol(index) {
+            const newName = prompt('Edit habit name:', protocols[index]);
+            if (newName && newName.trim()) {
+                protocols[index] = newName.trim();
+                saveToLocalStorage();
+                renderProtocols();
+            }
+        }
+
+        // Delete protocol
+        function deleteProtocol(index) {
+            if (confirm(`Delete habit "${protocols[index]}"? This will remove all data for this habit.`)) {
+                // Remove all data for this protocol
+                const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const key = getKey(index, day);
+                    delete habitData[key];
+                }
+
+                protocols.splice(index, 1);
+
+                // Reindex remaining data
+                const newHabitData = {};
+                Object.keys(habitData).forEach(key => {
+                    const parts = key.split('-');
+                    const year = parts[0];
+                    const month = parts[1];
+                    const protocolIndex = parseInt(parts[2]);
+                    const day = parts[3];
+
+                    if (protocolIndex > index) {
+                        const newKey = `${year}-${month}-${protocolIndex - 1}-${day}`;
+                        newHabitData[newKey] = habitData[key];
+                    } else if (protocolIndex < index) {
+                        newHabitData[key] = habitData[key];
+                    }
+                });
+
+                habitData = newHabitData;
+                saveToLocalStorage();
+                renderProtocols();
+                calculateTotals();
+            }
+        }
+
+        // Clear month data
+        function clearMonth() {
+            if (confirm('Clear all data for this month? This cannot be undone.')) {
+                const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+
+                // Clear habit data
+                protocols.forEach((protocol, index) => {
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const key = getKey(index, day);
+                        delete habitData[key];
+                    }
+                });
+
+                // Clear sleep data
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const key = getSleepKey(day);
+                    delete sleepData[key];
+                }
+
+                saveToLocalStorage();
+                renderCalendar();
+            }
+        }
+
+        // Local storage functions
+        function saveToLocalStorage() {
+            localStorage.setItem('habitTracker_protocols', JSON.stringify(protocols));
+            localStorage.setItem('habitTracker_habitData', JSON.stringify(habitData));
+            localStorage.setItem('habitTracker_sleepData', JSON.stringify(sleepData));
+        }
+
+        function loadFromLocalStorage() {
+            const savedProtocols = localStorage.getItem('habitTracker_protocols');
+            const savedHabitData = localStorage.getItem('habitTracker_habitData');
+            const savedSleepData = localStorage.getItem('habitTracker_sleepData');
+
+            if (savedProtocols) protocols = JSON.parse(savedProtocols);
+            if (savedHabitData) habitData = JSON.parse(savedHabitData);
+            if (savedSleepData) sleepData = JSON.parse(savedSleepData);
+        }
+
+        function loadMonthData() {
+            renderProtocols();
+            renderSleepTracking();
+            calculateTotals();
+        }
+
+        // Export data
+        function exportData() {
+            const data = {
+                protocols: protocols,
+                habitData: habitData,
+                sleepData: sleepData,
+                exportDate: new Date().toISOString()
+            };
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `habit_tracker_backup_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+        }
+
+        // Import data
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+
+                        if (confirm('Import this data? This will replace your current data.')) {
+                            protocols = data.protocols || [];
+                            habitData = data.habitData || {};
+                            sleepData = data.sleepData || {};
+                            saveToLocalStorage();
+                            renderCalendar();
+                            alert('Data imported successfully!');
+                        }
+                    } catch (error) {
+                        alert('Error importing data. Please check the file format.');
+                    }
+                };
+
+                reader.readAsText(file);
+            };
+
+            input.click();
+        }
+
+        // Initialize on page load
+        window.onload = init;
+    </script>
+</body>
+</html>
